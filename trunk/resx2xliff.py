@@ -186,6 +186,9 @@ class ResxConverter:
             tu_element = find_or_create_element(doc, body_element, 
                                                 'trans-unit', {'id': item['name']})
             source_element = find_or_create_element(doc, tu_element, 'source')
+            for node in source_element.childNodes:
+                source_element.removeChild(node)
+            source_element.appendChild(doc.createTextNode('s'))
             target_element = find_or_create_element(doc, tu_element, 'target')
 
         with open(target_file_name, 'w') as f:
