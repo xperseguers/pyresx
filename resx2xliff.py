@@ -1,5 +1,6 @@
 import os
 from xml import sax
+from xml.dom import minidom
 
 class ResxConverter:
     class ContentHandler(sax.handler.ContentHandler):
@@ -137,6 +138,61 @@ class ResxConverter:
             os.makedirs(target_lang_dir + '/' + relative_dir)
         except OSError:
             pass
+
+        target_file_name = target_lang_dir + '/' + file + '.xlf'
+        
+        try:
+            doc = minidom.parse(target_file_name)
+        except IOError:
+            impl = minidom.getDOMImplementation()
+            doc = impl.createDocument(None, 'xliff', None)
+
+        xliff = doc.documentElement
+        if xliff.tagName != 'xliff':
+            raise Exception('Invalid root element')
+
+        file_element = None
+        for node in xliff.childNodes:
+            if node.nodeType != minidom.Node.ELEMENT_NODE:
+                continue
+            element = node
+            if element.tagName == 'file':
+                if element.getAttribute('original') == source_file:
+                    file_element = element
+                    break
+        if file_element is None:
+            file_element = doc.createElement('file')
+            file_element.setAttribute('original', source_file)
+            xliff.appendChild(file_element)
+
+        body_element = None
+        for node in file_element.childNodes:
+            if node.nodeType != minidom.Node.ELEMENT_NODE:
+                continue
+            element = node
+            if element.tagName == 'body':
+                body_element = element
+                break
+        if body_element is None:
+            body_element = doc.createElement('body')
+            file_element.appendChild(body_element)
+
+        for item in data:
+            tu_element = None
+            for node in body_element.childNodes:
+                if node.nodeType != minidom.Node.ELEMENT_NODE:
+                    continue
+                element = node
+                if element.tagName == 'trans-unit':
+                    tu_element = element
+                    break
+            if tu_element is None:
+                tu_element = doc.createElement('trans-unit')
+                tu_element.setAttribute('id', item['name'])
+                body_element.appendChild(tu_element)
+
+        with open(target_file_name, 'w') as f:
+            f.write(doc.toxml())
         
     def update_translations(self):
         for lang_code in self.translations:
