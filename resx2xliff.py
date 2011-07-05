@@ -75,25 +75,35 @@ class ResxConverter:
 			if type(self.current_text) is dict:
 				self.current_text['comment'] = data
 
-	def __init__(self, dir):
+	def __init__(self, dir, target_dir, default_lang_code):
 		self.dir = dir
+		self.target_dir = target_dir
+		self.default_lang_code = default_lang_code
 		self.parser = sax.make_parser()
 
-	def parse_resx(self, file_name):
-		print file_name
+	def parse_resx(self, path):
+		relative_path = os.path.relpath(path, self.dir)
+		print relative_path
+		(relative_dir, file_name) = os.path.split(relative_path)
+		lang_code = None
+		file_name_parts = file_name.split('.')
+		if len(file_name_parts) > 2:
+			lang_code = file_name_parts[-2]
+		print lang_code
+		
+		# Parse source file
 		h = ResxConverter.ContentHandler()
 		self.parser.setContentHandler(h)
-		self.parser.parse(file_name)
+		self.parser.parse(path)
 		print h.text_data
 
-	def visit(self, arg, current_dir, dir_content):
+	def visit_dir(self, arg, current_dir, dir_content):
 		for dir_item in dir_content:
 			if os.path.isfile(current_dir + '/' + dir_item) and dir_item.lower().endswith('.resx'):
 				self.parse_resx(current_dir + '/' + dir_item)
 
 	def scan_dir(self):
-		os.path.walk(self.dir, self.visit, [])
-
-dir = 'c:/Users/fifedtyu/Documents/Projects/YIT/stage-2.0/YITMIS/GUI.Materials/Properties'
-converter = ResxConverter(dir)
-converter.scan_dir()
+		os.path.walk(self.dir, self.visit_dir, [])
+		
+	def run(self):
+		self.scan_dir()
