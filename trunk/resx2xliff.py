@@ -80,6 +80,7 @@ class ResxConverter:
 		self.target_dir = target_dir
 		self.default_lang_code = default_lang_code
 		self.parser = sax.make_parser()
+		self.translations = {}
 
 	def parse_resx(self, path):
 		relative_path = os.path.relpath(path, self.dir)
@@ -89,13 +90,22 @@ class ResxConverter:
 		file_name_parts = file_name.split('.')
 		if len(file_name_parts) > 2:
 			lang_code = file_name_parts[-2]
+			file_name_without_lang_code = file_name_parts[0]
+			for file_name_part in file_name_parts[1:-3]:
+				file_name_without_lang_code += '.' + file_name_part
+			file_name_without_lang_code += '.' + file_name_parts[-1]
+		else:
+			file_name_without_lang_code = file_name
 		print lang_code
+		if not lang_code in self.translations:
+			self.translations[lang_code] = {}
 		
 		# Parse source file
 		h = ResxConverter.ContentHandler()
 		self.parser.setContentHandler(h)
 		self.parser.parse(path)
-		print h.text_data
+		
+		self.translations[lang_code][relative_dir + '/' + file_name_without_lang_code] = {'source_file': relative_path, 'data': h.text_data}
 
 	def visit_dir(self, arg, current_dir, dir_content):
 		for dir_item in dir_content:
@@ -104,6 +114,29 @@ class ResxConverter:
 
 	def scan_dir(self):
 		os.path.walk(self.dir, self.visit_dir, [])
+
+	def update_translation(self, lang_code, file, source_file, data):
+		print file
+		print lang_code
+		if lang_code is None:
+			target_lang_dir = self.target_dir + '/' + self.default_lang_code
+		else:
+			target_lang_dir = self.target_dir + '/' + lang_code
+		
+		(relative_dir, file_name) = os.path.split(file)
+				
+		#Make target directory
+		try:
+			os.makedirs(target_lang_dir + '/' + relative_dir)
+		except OSError:
+			pass
+		
+	def update_translations(self):
+		for lang_code in self.translations:
+			for file in self.translations[lang_code]:
+				self.update_translation(lang_code, file, self.translations[lang_code][file]['source_file'], self.translations[lang_code][file]['data'])
 		
 	def run(self):
 		self.scan_dir()
+		self.update_translations()
+	
