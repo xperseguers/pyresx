@@ -5,9 +5,12 @@ class ResxConverter:
     class ContentHandler(sax.handler.ContentHandler):
         def __init__(self):
             self.handlers = [
-                ([u'root', u'data'], self.rootDataHandler, None, self.rootDataEndHandler),
-                ([u'root', u'data', u'value'], self.rootDataValueHandler, self.rootDataValueTextHandler),
-                ([u'root', u'data', u'comment'], self.rootDataCommentHandler, self.rootDataCommentTextHandler)
+                ([u'root', u'data'], self.rootDataHandler, 
+                 None, self.rootDataEndHandler),
+                ([u'root', u'data', u'value'], self.rootDataValueHandler, 
+                 self.rootDataValueTextHandler),
+                ([u'root', u'data', u'comment'], self.rootDataCommentHandler, 
+                 self.rootDataCommentTextHandler)
                 ]
             self.text_data = []
             
@@ -105,11 +108,15 @@ class ResxConverter:
         self.parser.setContentHandler(h)
         self.parser.parse(path)
         
-        self.translations[lang_code][relative_dir + '/' + file_name_without_lang_code] = {'source_file': relative_path, 'data': h.text_data}
+        self.translations[lang_code]\
+            [relative_dir + '/' 
+             + file_name_without_lang_code] = {'source_file': relative_path, 
+                                               'data': h.text_data}
 
     def visit_dir(self, arg, current_dir, dir_content):
         for dir_item in dir_content:
-            if os.path.isfile(current_dir + '/' + dir_item) and dir_item.lower().endswith('.resx'):
+            if os.path.isfile(current_dir + '/' + dir_item) \
+                    and dir_item.lower().endswith('.resx'):
                 self.parse_resx(current_dir + '/' + dir_item)
 
     def scan_dir(self):
@@ -134,9 +141,10 @@ class ResxConverter:
     def update_translations(self):
         for lang_code in self.translations:
             for file in self.translations[lang_code]:
-                self.update_translation(lang_code, file, self.translations[lang_code][file]['source_file'], self.translations[lang_code][file]['data'])
+                source_file = self.translations[lang_code][file]['source_file']
+                data = self.translations[lang_code][file]['data']
+                self.update_translation(lang_code, file, source_file, data)
         
     def run(self):
         self.scan_dir()
         self.update_translations()
-    
