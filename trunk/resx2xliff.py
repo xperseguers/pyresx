@@ -1,6 +1,8 @@
 import os
+from xml.parsers import expat 
 from xml import sax
 from xml.dom import minidom
+from domext import PrettyPrint
 
 def find_or_create_element(doc, parent_element, tag_name, attrs=None):
     child_element = None
@@ -27,6 +29,11 @@ def find_or_create_element(doc, parent_element, tag_name, attrs=None):
         parent_element.appendChild(child_element)
     
     return child_element
+
+def set_text(doc, element, text):
+    for node in element.childNodes:
+        element.removeChild(node)
+    element.appendChild(doc.createTextNode(text))
 
 class ResxConverter:
     class ContentHandler(sax.handler.ContentHandler):
@@ -167,11 +174,13 @@ class ResxConverter:
 
         target_file_name = target_lang_dir + '/' + file + '.xlf'
         
+        new_doc = False
         try:
             doc = minidom.parse(target_file_name)
-        except IOError:
+        except (IOError, expat.ExpatError):
             impl = minidom.getDOMImplementation()
             doc = impl.createDocument(None, 'xliff', None)
+            new_doc = True
 
         xliff = doc.documentElement
         if xliff.tagName != 'xliff':
@@ -185,14 +194,20 @@ class ResxConverter:
         for item in data:
             tu_element = find_or_create_element(doc, body_element, 
                                                 'trans-unit', {'id': item['name']})
+            source_text = self.translations[None][file]['data']
             source_element = find_or_create_element(doc, tu_element, 'source')
-            for node in source_element.childNodes:
-                source_element.removeChild(node)
-            source_element.appendChild(doc.createTextNode('s'))
+            set_text(doc, source_element, 
+                     self.find_source_text(file, item['name']))
             target_element = find_or_create_element(doc, tu_element, 'target')
+            set_text(doc, target_element, item['value'])
 
         with open(target_file_name, 'w') as f:
-            f.write(doc.toxml())
+            if new_doc:
+                PrettyPrint(doc, f)
+            else:
+                f.write('<?xml version="1.0" encoding="%s"?>\n' % doc.encoding)
+                f.write(xliff.toxml('utf-8'))
+                f.write('\n')
         
     def update_translations(self):
         for lang_code in self.translations:
@@ -200,6 +215,14 @@ class ResxConverter:
                 source_file = self.translations[lang_code][file]['source_file']
                 data = self.translations[lang_code][file]['data']
                 self.update_translation(lang_code, file, source_file, data)
+
+    def find_source_text(self, file, id):
+        data = self.translations[None][file]['data']
+        for item in data:
+            if item['name'] == id:
+                return item['value']
+        return u''
+                
         
     def run(self):
         self.scan_dir()
