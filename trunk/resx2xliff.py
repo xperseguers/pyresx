@@ -199,7 +199,10 @@ class ResxConverter:
             set_text(doc, source_element, 
                      self.find_source_text(file, item['name']))
             target_element = find_or_create_element(doc, tu_element, 'target')
-            set_text(doc, target_element, item['value'])
+            target_text = u''
+            if 'value' in item:
+                target_text = item['value']
+            set_text(doc, target_element, target_text)
 
         with open(target_file_name, 'w') as f:
             if new_doc:
@@ -220,7 +223,10 @@ class ResxConverter:
         data = self.translations[None][file]['data']
         for item in data:
             if item['name'] == id:
-                return item['value']
+                if 'value' in item:
+                    return item['value']
+                else:
+                    return u''
         return u''
                 
         
