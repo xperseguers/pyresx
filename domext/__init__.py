@@ -57,7 +57,7 @@ def NodeTypeToClassName(nodeType):
 def Print(root, stream=sys.stdout, encoding='UTF-8'):
     if not hasattr(root, "nodeType"):
         return
-    from xml.dom.ext import Printer
+    import Printer
     nss = SeekNss(root)
     visitor = Printer.PrintVisitor(stream, encoding, nsHints=nss)
     Printer.PrintWalker(visitor, root).run()
@@ -78,7 +78,7 @@ def PrettyPrint(root, stream=sys.stdout, encoding='UTF-8', indent='  ',
     visitor = Printer.PrintVisitor(stream, encoding, indent,
                                    preserveElements, nss_hints)
     Printer.PrintWalker(visitor, root).run()
-    stream.write('\n')
+    stream.write(u'\n')
     return
 
 
@@ -89,7 +89,7 @@ def XHtmlPrettyPrint(root, stream=sys.stdout, encoding='UTF-8', indent='  '):
     from xml.dom.ext import XHtmlPrinter
     visitor = XHtmlPrinter.XHtmlPrintVisitor(stream, encoding, indent)
     Printer.PrintWalker(visitor, root).run()
-    stream.write('\n')
+    stream.write(u'\n')
     return
 
 
