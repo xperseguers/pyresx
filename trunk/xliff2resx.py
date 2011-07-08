@@ -120,13 +120,11 @@ class XLIFFConverter:
                 raise Exception('Invalid root element')
 
             for item in items:
-                print item
                 data_element = find_or_create_element(doc, root_element, 'data',
                                                       {'name': item['id']})
                 value_element = find_or_create_element(doc, data_element, 'value')
                 if 'target' in item:
                     set_text(doc, value_element, item['target'])
-            #print items
 
             with io.open(target_file_name, 'w', newline='\r\n') as f:
                 if new_doc:
