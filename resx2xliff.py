@@ -169,7 +169,6 @@ class ResxConverter:
                     return u''
         return u''
                 
-        
     def run(self):
         self.scan_dir()
         self.update_translations()
