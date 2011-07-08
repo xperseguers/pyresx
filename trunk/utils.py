@@ -1,5 +1,6 @@
 from xml.dom import minidom
 from xml import sax
+import os.path
 
 def find_or_create_element(doc, parent_element, tag_name, attrs=None):
     child_element = None
@@ -35,8 +36,6 @@ def set_text(doc, element, text):
 class BaseContentHandler(sax.handler.ContentHandler):
     def startDocument(self):
         self.elements = []
-        self.current_text_handler = None
-        self.current_end_handler = None
             
     def endDocument(self):
         pass
@@ -46,18 +45,38 @@ class BaseContentHandler(sax.handler.ContentHandler):
         for handler in self.handlers:
             if handler[0] == self.elements:
                 handler[1](attrs)
-                if len(handler) > 2:
-                    self.current_text_handler = handler[2]
-                if len(handler) > 3:
-                    self.current_end_handler = handler[3]
 
     def endElement(self, name):
-        if not self.current_end_handler is None:
-            self.current_end_handler()
+        for handler in self.handlers:
+            if handler[0] == self.elements:
+                if len(handler) > 3:
+                    if not handler[3] is None:
+                        handler[3]()
         self.elements.pop()
-        self.current_text_handler = None
-        self.current_end_handler = None
             
     def characters(self, data):
-        if not self.current_text_handler is None:
-            self.current_text_handler(data)
+        for handler in self.handlers:
+            if handler[0] == self.elements:
+                if len(handler) > 2:
+                    if not handler[2] is None:
+                        handler[2](data)
+
+def path_components(path):
+    components = []
+    while path:
+        (path, tail) = os.path.split(path)
+        components.insert(0, tail)
+    return components
+
+def extract_lang_code(file_name):
+    lang_code = None
+    file_name_parts = file_name.split('.')
+    if len(file_name_parts) > 2:
+        lang_code = file_name_parts[-2]
+        file_name_without_lang_code = file_name_parts[0]
+        for file_name_part in file_name_parts[1:-2]:
+            file_name_without_lang_code += '.' + file_name_part
+        file_name_without_lang_code += '.' + file_name_parts[-1]
+    else:
+        file_name_without_lang_code = file_name
+    return (lang_code, file_name_without_lang_code)
