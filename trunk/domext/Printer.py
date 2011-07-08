@@ -165,12 +165,18 @@ class PrintVisitor(Visitor):
         self.force8bit = force8bit
         return
 
+    def _write_to_stream(self, str):
+        if self.stream.__class__.__name__ == 'TextIOWrapper':
+            self.stream.write(str.decode(self.encoding))
+        else:
+            self.stream.write(str)
+
     def _write(self, text):
         if self.force8bit:
             obj = strobj_to_utf8str(text, self.encoding)
         else:
             obj = utf8_to_code(text, self.encoding)
-        self.stream.write(obj)
+        self._write_to_stream(obj)
         return
 
     def _tryIndent(self):
@@ -242,7 +248,7 @@ class PrintVisitor(Visitor):
         if value or not self._html:
             text = TranslateCdata(value, self.encoding)
             text, delimiter = TranslateCdataAttr(text)
-            self.stream.write("=%s%s%s" % (delimiter, text, delimiter))
+            self._write_to_stream("=%s%s%s" % (delimiter, text, delimiter))
         return
 
     def visitProlog(self):
@@ -318,7 +324,7 @@ class PrintVisitor(Visitor):
                 text = TranslateHtmlCdata(text, self.encoding)
             else:
                 text = TranslateCdata(text, self.encoding)
-            self.stream.write(text)
+            self._write_to_stream(text)
             self._inText = 1
         return
 
