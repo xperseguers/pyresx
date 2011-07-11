@@ -21,16 +21,31 @@ class ResxConverter:
             self.text_data = []
             
         def rootDataHandler(self, attrs):
+            self.current_text = None
+
             mimetype = None
             if attrs.has_key('mimetype'):
                 mimetype = attrs['mimetype']
-            self.current_text = None
-            if mimetype in [None, 'text/plain']:
-                self.current_text = {}
-                
+            if not mimetype in [None, 'text/plain']:
+                return
+
+            type_attr = None
+            if attrs.has_key('type'):
+                type_attr = attrs['type']
+            if not type_attr in [None]:
+                return
+            
             name = None
             if attrs.has_key('name'):
                 name = attrs['name']
+
+            if name is None:
+                return
+            if name.startswith(u'>>'):
+                return
+
+            self.current_text = {}
+            
             if type(self.current_text) is dict:
                 self.current_text['name'] = name
             
@@ -128,6 +143,9 @@ class ResxConverter:
 
         file_element = find_or_create_element(doc, xliff, 
                                               'file', {'original': source_file})
+        file_element.setAttribute('source-language', self.default_lang_code)
+        file_element.setAttribute('target-language', 
+                                  lang_code or self.default_lang_code)
 
         body_element = find_or_create_element(doc, file_element, 'body')
 
@@ -136,9 +154,12 @@ class ResxConverter:
                                                 'trans-unit', {'id': item['name']})
             source_text = self.translations[None][file]['data']
             source_element = find_or_create_element(doc, tu_element, 'source')
+            source_element.setAttribute('xml:lang', self.default_lang_code)
             set_text(doc, source_element, 
                      self.find_source_text(file, item['name']))
             target_element = find_or_create_element(doc, tu_element, 'target')
+            target_element.setAttribute('xml:lang', 
+                                        lang_code or self.default_lang_code)
             target_text = u''
             if 'value' in item:
                 target_text = item['value']
