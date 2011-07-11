@@ -88,16 +88,14 @@ class XLIFFConverter:
     def update_translation(self, lang_code, data):
         print lang_code
         for (source_file, items) in data.iteritems():
+            # Skip file if no items
+            if len(items) == 0:
+                continue
+
             print source_file
             (source_dir, source_fn) = os.path.split(source_file)
             (source_file_lang_code, 
              source_fn_wo_lang_code) = extract_lang_code(source_fn)
-
-            #Make target directory
-            try:
-                os.makedirs(self.target_dir + '/' + source_dir)
-            except OSError:
-                pass
             
             target_file_name = self.target_dir + '/' + source_file
             if source_file_lang_code != lang_code:
@@ -126,6 +124,14 @@ class XLIFFConverter:
                 if 'target' in item:
                     set_text(doc, value_element, item['target'])
 
+
+            # Make target directory
+            try:
+                os.makedirs(self.target_dir + '/' + source_dir)
+            except OSError:
+                pass
+
+            # Create of overwrite xml file
             with io.open(target_file_name, 'w', newline='\r\n') as f:
                 if new_doc:
                     PrettyPrint(doc, f)
