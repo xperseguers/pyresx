@@ -117,13 +117,25 @@ class XLIFFConverter:
             if root_element.tagName != 'root':
                 raise Exception('Invalid root element')
 
+            no_changes = True
+
             for item in items:
+                if not 'target' in item:
+                    continue
+                target_text = item['target']
+                if not target_text:
+                    continue
+                if target_text == item['source']:
+                    continue
                 data_element = find_or_create_element(doc, root_element, 'data',
                                                       {'name': item['id']})
                 value_element = find_or_create_element(doc, data_element, 'value')
-                if 'target' in item:
-                    set_text(doc, value_element, item['target'])
+                res = set_text(doc, value_element, target_text)
+                if res:
+                    no_changes = False
 
+            if no_changes:
+                continue
 
             # Make target directory
             try:
