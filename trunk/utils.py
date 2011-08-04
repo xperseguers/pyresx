@@ -25,13 +25,18 @@ def find_or_create_element(doc, parent_element, tag_name, attrs=None):
             for (key, value) in attrs.iteritems():
                 child_element.setAttribute(key, value)
         parent_element.appendChild(child_element)
-    
+
     return child_element
 
 def set_text(doc, element, text):
+    if len(element.childNodes) == 1 and \
+            element.childNodes[0].nodeType == minidom.Node.TEXT_NODE and \
+            element.childNodes[0].data.strip() == text.strip():
+        return False
     for node in element.childNodes:
         element.removeChild(node)
     element.appendChild(doc.createTextNode(text))
+    return True
 
 class BaseContentHandler(sax.handler.ContentHandler):
     def startDocument(self):
