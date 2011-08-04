@@ -149,7 +149,9 @@ class ResxConverter:
 
         body_element = find_or_create_element(doc, file_element, 'body')
 
+        ids = set([])
         for item in data:
+            ids.add(item['name'])
             tu_element = find_or_create_element(doc, body_element, 
                                                 'trans-unit', {'id': item['name']})
             source_text = self.translations[None][file]['data']
@@ -164,6 +166,24 @@ class ResxConverter:
             if 'value' in item:
                 target_text = item['value']
             set_text(doc, target_element, target_text)
+
+        # from original file
+        source_data = self.translations[None][file]['data']
+        for item in source_data:
+            if item['name'] in ids:
+                continue
+            if not 'value' in item:
+                continue
+            tu_element = find_or_create_element(doc, body_element, 
+                                                'trans-unit', {'id': item['name']})
+            source_element = find_or_create_element(doc, tu_element, 'source')
+            source_element.setAttribute('xml:lang', self.default_lang_code)
+            set_text(doc, source_element, item['value'])
+            target_element = find_or_create_element(doc, tu_element, 'target')
+            target_element.setAttribute('xml:lang', 
+                                        lang_code or self.default_lang_code)
+            #target_text = u''
+            #set_text(doc, target_element, target_text)
 
         with open(target_file_name, 'w') as f:
             if new_doc:
