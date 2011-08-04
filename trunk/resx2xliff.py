@@ -73,6 +73,7 @@ class ResxConverter:
         self.default_lang_code = default_lang_code
         self.parser = sax.make_parser()
         self.translations = {}
+        self.suggestions = {}
 
     def parse_resx(self, path):
         relative_path = os.path.relpath(path, self.dir)
@@ -112,8 +113,8 @@ class ResxConverter:
         os.path.walk(self.dir, self.visit_dir, [])
 
     def update_translation(self, lang_code, file, source_file, data):
-        print file
-        print lang_code
+        #print file
+        #print lang_code
         if lang_code is None:
             target_lang_dir = self.target_dir + '/' + self.default_lang_code
         else:
@@ -154,17 +155,24 @@ class ResxConverter:
             ids.add(item['name'])
             tu_element = find_or_create_element(doc, body_element, 
                                                 'trans-unit', {'id': item['name']})
-            source_text = self.translations[None][file]['data']
+            source_text = self.find_source_text(file, item['name'])
             source_element = find_or_create_element(doc, tu_element, 'source')
             source_element.setAttribute('xml:lang', self.default_lang_code)
-            set_text(doc, source_element, 
-                     self.find_source_text(file, item['name']))
+            set_text(doc, source_element, source_text)
             target_element = find_or_create_element(doc, tu_element, 'target')
             target_element.setAttribute('xml:lang', 
                                         lang_code or self.default_lang_code)
             target_text = u''
             if 'value' in item:
                 target_text = item['value']
+
+            # try to suggest translation
+            if not target_text:
+                if source_text in self.suggestions and \
+                        lang_code in self.suggestions[source_text]:
+                    target_text = self.suggestions[source_text][lang_code]
+                    print "Suggested: " + source_text + " -> " + target_text
+
             set_text(doc, target_element, target_text)
 
         # from original file
@@ -182,8 +190,14 @@ class ResxConverter:
             target_element = find_or_create_element(doc, tu_element, 'target')
             target_element.setAttribute('xml:lang', 
                                         lang_code or self.default_lang_code)
-            #target_text = u''
-            #set_text(doc, target_element, target_text)
+
+            # try to suggest translation
+            if item['value'] in self.suggestions:
+                source_text = item['value']
+                if lang_code in self.suggestions[source_text]:
+                    target_text = self.suggestions[source_text][lang_code]
+                    set_text(doc, target_element, target_text)
+                    print "Suggested: " + source_text + " -> " + target_text
 
         with open(target_file_name, 'w') as f:
             if new_doc:
@@ -212,6 +226,34 @@ class ResxConverter:
                 
     def run(self):
         self.scan_dir()
+        lang_codes = self.translations.keys()
+        for (file_name, data) in self.translations[None].iteritems():
+            print file_name
+            #print data
+            for item in data['data']:
+                if not 'value' in item:
+                    continue
+                source_text = item['value']
+                id = item['name']
+                if not source_text in self.suggestions:
+                    self.suggestions[source_text] = {}
+                for lang_code in lang_codes:
+                    if not lang_code in self.suggestions[source_text]:
+                        if file_name in self.translations[lang_code]: 
+                            trans = self.translations[lang_code][file_name]['data']
+                            translation = None
+                            for tran in trans:
+                                if tran['name'] == id:
+                                    if 'value' in tran:
+                                        translation = tran['value']
+                                    break
+                            if translation and translation != source_text:
+                                self.suggestions[source_text][lang_code] = \
+                                    translation
+                # debug
+                if source_text == u'All':
+                    print self.suggestions[u'All']
+        #print self.suggestions
         self.update_translations()
 
 if __name__ == '__main__':
