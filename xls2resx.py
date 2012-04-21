@@ -82,7 +82,7 @@ class ExcelConverter(object):
                                                    {'name': trans_item['id']})
             if created:
                 data.setAttribute('xml:space', 'preserve')
-            value, created = find_or_create_element(doc, root, 'value')
+            value, created = find_or_create_element(doc, data, 'value')
             if not created:
                 for n in value.childNodes:
                     value.removeChild(n)
