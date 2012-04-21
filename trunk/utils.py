@@ -2,9 +2,8 @@ from xml.dom import minidom
 from xml import sax
 import os.path
 
-def find_or_create_element(doc, parent_element, tag_name, attrs=None):
+def find_element(doc, parent_element, tag_name, attrs=None):
     child_element = None
-
     for node in parent_element.childNodes:
         if node.nodeType != minidom.Node.ELEMENT_NODE:
             continue
@@ -19,14 +18,19 @@ def find_or_create_element(doc, parent_element, tag_name, attrs=None):
             if conform:
                 child_element = element
                 break
+    return child_element
+
+def find_or_create_element(doc, parent_element, tag_name, attrs=None):
+    child_element = find_element(doc, parent_element, tag_name, attrs)
+    created = False
     if child_element is None:
+        created = True
         child_element = doc.createElement(tag_name)
         if attrs:
             for (key, value) in attrs.iteritems():
                 child_element.setAttribute(key, value)
         parent_element.appendChild(child_element)
-
-    return child_element
+    return child_element, created
 
 def set_text(doc, element, text):
     if len(element.childNodes) == 1 and \
