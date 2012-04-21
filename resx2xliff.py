@@ -2,7 +2,7 @@ import os
 from xml.parsers import expat 
 from xml import sax
 from xml.dom import minidom
-from domext import PrettyPrint
+# from domext import PrettyPrint
 from optparse import OptionParser
 
 from utils import find_or_create_element, set_text, BaseContentHandler
@@ -129,6 +129,7 @@ class ResxConverter:
             pass
 
         target_file_name = target_lang_dir + '/' + file + '.xlf'
+        print target_file_name
         
         new_doc = False
         try:
@@ -142,24 +143,24 @@ class ResxConverter:
         if xliff.tagName != 'xliff':
             raise Exception('Invalid root element')
 
-        file_element = find_or_create_element(doc, xliff, 
-                                              'file', {'original': source_file})
+        file_element, created = find_or_create_element(doc, xliff, 
+                                                       'file', {'original': source_file})
         file_element.setAttribute('source-language', self.default_lang_code)
         file_element.setAttribute('target-language', 
                                   lang_code or self.default_lang_code)
 
-        body_element = find_or_create_element(doc, file_element, 'body')
+        body_element, created = find_or_create_element(doc, file_element, 'body')
 
         ids = set([])
         for item in data:
             ids.add(item['name'])
-            tu_element = find_or_create_element(doc, body_element, 
-                                                'trans-unit', {'id': item['name']})
+            tu_element, created = find_or_create_element(doc, body_element, 
+                                                         'trans-unit', {'id': item['name']})
             source_text = self.find_source_text(file, item['name'])
-            source_element = find_or_create_element(doc, tu_element, 'source')
+            source_element, created = find_or_create_element(doc, tu_element, 'source')
             source_element.setAttribute('xml:lang', self.default_lang_code)
             set_text(doc, source_element, source_text)
-            target_element = find_or_create_element(doc, tu_element, 'target')
+            target_element, created = find_or_create_element(doc, tu_element, 'target')
             target_element.setAttribute('xml:lang', 
                                         lang_code or self.default_lang_code)
             target_text = u''
@@ -182,12 +183,12 @@ class ResxConverter:
                 continue
             if not 'value' in item:
                 continue
-            tu_element = find_or_create_element(doc, body_element, 
-                                                'trans-unit', {'id': item['name']})
-            source_element = find_or_create_element(doc, tu_element, 'source')
+            tu_element, created = find_or_create_element(doc, body_element, 
+                                                         'trans-unit', {'id': item['name']})
+            source_element, created = find_or_create_element(doc, tu_element, 'source')
             source_element.setAttribute('xml:lang', self.default_lang_code)
             set_text(doc, source_element, item['value'])
-            target_element = find_or_create_element(doc, tu_element, 'target')
+            target_element, created = find_or_create_element(doc, tu_element, 'target')
             target_element.setAttribute('xml:lang', 
                                         lang_code or self.default_lang_code)
 
@@ -201,7 +202,7 @@ class ResxConverter:
 
         with open(target_file_name, 'w') as f:
             if new_doc:
-                PrettyPrint(doc, f)
+                f.write(doc.toprettyxml().encode('utf-8'))
             else:
                 f.write('<?xml version="1.0" encoding="%s"?>\n' % doc.encoding)
                 f.write(xliff.toxml('utf-8'))

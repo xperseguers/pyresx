@@ -127,9 +127,9 @@ class XLIFFConverter:
                     continue
                 if target_text == item['source']:
                     continue
-                data_element = find_or_create_element(doc, root_element, 'data',
-                                                      {'name': item['id']})
-                value_element = find_or_create_element(doc, data_element, 'value')
+                data_element, created = find_or_create_element(doc, root_element, 'data',
+                                                               {'name': item['id']})
+                value_element, created = find_or_create_element(doc, data_element, 'value')
                 res = set_text(doc, value_element, target_text)
                 if res:
                     no_changes = False
