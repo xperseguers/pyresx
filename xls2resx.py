@@ -78,6 +78,13 @@ class ExcelConverter(object):
 
         root = doc.documentElement
         for trans_item in trans_items:
+            translation = trans_item['translations'][lang_code]
+            if not translation:
+                data = find_element(doc, root, 'data',
+                                    {'name': trans_item['id']})
+                if data:
+                    root.removeChild(data)
+                continue
             data, created = find_or_create_element(doc, root, 'data',
                                                    {'name': trans_item['id']})
             if created:
@@ -86,7 +93,7 @@ class ExcelConverter(object):
             if not created:
                 for n in value.childNodes:
                     value.removeChild(n)
-            value.appendChild(doc.createTextNode(trans_item['translations'][lang_code]))
+            value.appendChild(doc.createTextNode(translation))
 
         with open(fullpath, 'w') as f:
             f.write(doc.toxml().encode('utf-8'))
